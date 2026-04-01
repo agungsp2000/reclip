@@ -1,4 +1,7 @@
+
 # ReClip
+
+For windows user see the quick start
 
 A self-hosted, open-source video and audio downloader with a clean web UI. Paste links from YouTube, TikTok, Instagram, Twitter/X, and 1000+ other sites — download as MP4 or MP3.
 
@@ -20,12 +23,11 @@ https://github.com/user-attachments/assets/419d3e50-c933-444b-8cab-a9724986ba05
 - Single Python file backend (~150 lines)
 
 ## Quick Start
-
-```bash
-brew install yt-dlp ffmpeg    # or apt install ffmpeg && pip install yt-dlp
-git clone https://github.com/averygan/reclip.git
-cd reclip
-./reclip.sh
+```
+install ffmpeg
+c:\>winget install ffmpeg
+c:\>pip install -q flask yt-dlp
+python app.py 
 ```
 
 Open **http://localhost:8899**.
