@@ -23,10 +23,16 @@ https://github.com/user-attachments/assets/419d3e50-c933-444b-8cab-a9724986ba05
 - Single Python file backend (~150 lines)
 
 ## Quick Start
+Install ffmpeg, flash and yt-dlp
+
 ```
-install ffmpeg
 c:\>winget install ffmpeg
 c:\>pip install -q flask yt-dlp
+```
+
+Go to the reclip's directory
+
+```
 python app.py 
 ```
 
