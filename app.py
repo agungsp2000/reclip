@@ -7,6 +7,10 @@ import threading
 from flask import Flask, request, jsonify, send_file, render_template
 
 app = Flask(__name__)
+
+# ====================== FIXED FFmpeg Path ======================
+FFMPEG_LOCATION = r"C:\Users\Administrator\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1-full_build\bin"
+
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "downloads")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
@@ -17,7 +21,7 @@ def run_download(job_id, url, format_choice, format_id):
     job = jobs[job_id]
     out_template = os.path.join(DOWNLOAD_DIR, f"{job_id}.%(ext)s")
 
-    cmd = ["yt-dlp", "--no-playlist", "-o", out_template]
+    cmd = ["yt-dlp", "--no-playlist", "--ffmpeg-location", FFMPEG_LOCATION, "-o", out_template]
 
     if format_choice == "audio":
         cmd += ["-x", "--audio-format", "mp3"]
@@ -31,8 +35,9 @@ def run_download(job_id, url, format_choice, format_id):
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         if result.returncode != 0:
+            error_msg = result.stderr.strip() or result.stdout.strip() or "Unknown error"
             job["status"] = "error"
-            job["error"] = result.stderr.strip().split("\n")[-1]
+            job["error"] = error_msg[-600:]   # Show more of the real error
             return
 
         files = glob.glob(os.path.join(DOWNLOAD_DIR, f"{job_id}.*"))
@@ -48,6 +53,7 @@ def run_download(job_id, url, format_choice, format_id):
             target = [f for f in files if f.endswith(".mp4")]
             chosen = target[0] if target else files[0]
 
+        # Remove extra files
         for f in files:
             if f != chosen:
                 try:
@@ -59,12 +65,12 @@ def run_download(job_id, url, format_choice, format_id):
         job["file"] = chosen
         ext = os.path.splitext(chosen)[1]
         title = job.get("title", "").strip()
-        # Sanitize title for filename
         if title:
             safe_title = "".join(c for c in title if c not in r'\/:*?"<>|').strip()[:20].strip()
             job["filename"] = f"{safe_title}{ext}" if safe_title else os.path.basename(chosen)
         else:
             job["filename"] = os.path.basename(chosen)
+
     except subprocess.TimeoutExpired:
         job["status"] = "error"
         job["error"] = "Download timed out (5 min limit)"
@@ -85,15 +91,17 @@ def get_info():
     if not url:
         return jsonify({"error": "No URL provided"}), 400
 
-    cmd = ["yt-dlp", "--no-playlist", "-j", url]
+    cmd = ["yt-dlp", "--no-playlist", "--ffmpeg-location", FFMPEG_LOCATION, "-j", url]
+
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if result.returncode != 0:
-            return jsonify({"error": result.stderr.strip().split("\n")[-1]}), 400
+            error_msg = result.stderr.strip() or result.stdout.strip() or "Unknown error"
+            return jsonify({"error": error_msg[-600:]}), 400
 
         info = json.loads(result.stdout)
 
-        # Build quality options — keep best format per resolution
+        # Build quality options
         best_by_height = {}
         for f in info.get("formats", []):
             height = f.get("height")
